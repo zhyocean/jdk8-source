@@ -230,6 +230,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      */
     /**
      * 负载因子
+     *  负载因子用于判断数组是否需要进行扩容，即当数组元素 >= 数组容量*负载因子时，需要对数组进行扩容
      */
     static final float DEFAULT_LOAD_FACTOR = 0.75f;
 
@@ -319,6 +320,9 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * cheapest possible way to reduce systematic lossage, as well as
      * to incorporate impact of the highest bits that would otherwise
      * never be used in index calculations because of table bounds.
+     */
+    /**
+     * 计算出hash值，得出key所在bucket下标
      */
     static final int hash(Object key) {
         int h;
@@ -494,6 +498,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                     threshold = tableSizeFor(t);
             }
             else if (s > threshold)
+                //扩容
                 resize();
             for (Map.Entry<? extends K, ? extends V> e : m.entrySet()) {
                 K key = e.getKey();
@@ -538,6 +543,11 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      *
      * @see #put(Object, Object)
      */
+    /**
+     * 通过key获取值
+     * 1.首先通过hash函数获得该key的hash值，该hash值即key在数组中的下标
+     * 2.hashmap的数组每个元素是以链表形式存在，获得hash值作为下标后即在该下标的链表中通过equals(key)方法获得该key的值
+     */
     public V get(Object key) {
         Node<K,V> e;
         return (e = getNode(hash(key), key)) == null ? null : e.value;
@@ -558,8 +568,10 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                 ((k = first.key) == key || (key != null && key.equals(k))))
                 return first;
             if ((e = first.next) != null) {
+                //判断是否为红黑树
                 if (first instanceof TreeNode)
                     return ((TreeNode<K,V>)first).getTreeNode(hash, key);
+                //否则去链表中查找
                 do {
                     if (e.hash == hash &&
                         ((k = e.key) == key || (key != null && key.equals(k))))
@@ -594,6 +606,13 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      *         (A <tt>null</tt> return can also indicate that the map
      *         previously associated <tt>null</tt> with <tt>key</tt>.)
      */
+    /**
+     * 进行put操作
+     * 1.计算该key的hash值作为key存入的下标
+     * 2.该下标处无节点存在则直接插入
+     * 3.有节点存在，从节点链表头部开始遍历，存在该key则覆盖，否则在尾部为新key创建一个节点
+     * 4.遍历前如果链表长度大于8则会转换为红黑树进行插入
+     */
     public V put(K key, V value) {
         return putVal(hash(key), key, value, false, true);
     }
@@ -611,25 +630,32 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
                    boolean evict) {
         Node<K,V>[] tab; Node<K,V> p; int n, i;
+        //table为空则创建
         if ((tab = table) == null || (n = tab.length) == 0)
             n = (tab = resize()).length;
+        //如果该hash值的下标出没有元素则直接插入
         if ((p = tab[i = (n - 1) & hash]) == null)
             tab[i] = newNode(hash, key, value, null);
         else {
             Node<K,V> e; K k;
+            //如果存在该key则直接覆盖
             if (p.hash == hash &&
                 ((k = p.key) == key || (key != null && key.equals(k))))
                 e = p;
+            //为红黑树，则进行红黑树的插入
             else if (p instanceof TreeNode)
                 e = ((TreeNode<K,V>)p).putTreeVal(this, tab, hash, key, value);
+            //为链表，则遍历链表进行插入
             else {
                 for (int binCount = 0; ; ++binCount) {
+                    //不存在该key，则在链表的尾处为该key的值新建一个节点
                     if ((e = p.next) == null) {
                         p.next = newNode(hash, key, value, null);
                         if (binCount >= TREEIFY_THRESHOLD - 1) // -1 for 1st
                             treeifyBin(tab, hash);
                         break;
                     }
+                    //存在该key则跳出循环
                     if (e.hash == hash &&
                         ((k = e.key) == key || (key != null && key.equals(k))))
                         break;
@@ -659,6 +685,10 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * with a power of two offset in the new table.
      *
      * @return the table
+     */
+    /**
+     * 数组扩容
+     * 扩容时需要为原先数组中的键值对重新计算hash值作为存放下标
      */
     final Node<K,V>[] resize() {
         Node<K,V>[] oldTab = table;
