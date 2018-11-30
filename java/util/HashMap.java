@@ -213,6 +213,9 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     /**
      * The default initial capacity - MUST be a power of two.
      */
+    /**
+     * 默认数组大小为16，并且必须是2的幂次方
+     */
     static final int DEFAULT_INITIAL_CAPACITY = 1 << 4; // aka 16
 
     /**
@@ -224,6 +227,9 @@ public class HashMap<K,V> extends AbstractMap<K,V>
 
     /**
      * The load factor used when none specified in constructor.
+     */
+    /**
+     * 负载因子
      */
     static final float DEFAULT_LOAD_FACTOR = 0.75f;
 
