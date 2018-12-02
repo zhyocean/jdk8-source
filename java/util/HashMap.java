@@ -648,7 +648,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             //为链表，则遍历链表进行插入
             else {
                 for (int binCount = 0; ; ++binCount) {
-                    //不存在该key，则在链表的尾处为该key的值新建一个节点
+                    //不存在该key，则在链表的头处为该key的值新建一个节点
                     if ((e = p.next) == null) {
                         p.next = newNode(hash, key, value, null);
                         if (binCount >= TREEIFY_THRESHOLD - 1) // -1 for 1st
