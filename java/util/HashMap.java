@@ -651,6 +651,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                     //不存在该key，则在链表的头处为该key的值新建一个节点
                     if ((e = p.next) == null) {
                         p.next = newNode(hash, key, value, null);
+                        //当链表中节点数超过8，则转换成红黑树存储
                         if (binCount >= TREEIFY_THRESHOLD - 1) // -1 for 1st
                             treeifyBin(tab, hash);
                         break;
