@@ -508,6 +508,9 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * because the top two bits of 32bit hash fields are used for
      * control purposes.
      */
+    /**
+     * int为4字节32位，最高位为符号位，因此设置最大容量为2的30次方
+     */
     private static final int MAXIMUM_CAPACITY = 1 << 30;
 
     /**
@@ -1009,27 +1012,40 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
     /** Implementation for put and putIfAbsent */
     final V putVal(K key, V value, boolean onlyIfAbsent) {
         if (key == null || value == null) throw new NullPointerException();
+        //得到hash值
         int hash = spread(key.hashCode());
+        //用于记录相应链表的长度
         int binCount = 0;
         for (Node<K,V>[] tab = table;;) {
             Node<K,V> f; int n, i, fh;
+            //数组为空则初始化
             if (tab == null || (n = tab.length) == 0)
                 tab = initTable();
+            //通过hash值找到对应的数组下标f，并且该数组中还没有元素
             else if ((f = tabAt(tab, i = (n - 1) & hash)) == null) {
+                //使用CAS操作将新值放入table中
+                //          成功则退出循环
+                //          失败则表示有并发操作，进入下一次循环
                 if (casTabAt(tab, i, null,
                              new Node<K,V>(hash, key, value, null)))
                     break;                   // no lock when adding to empty bin
             }
             else if ((fh = f.hash) == MOVED)
+                //扩容导致数据迁移
                 tab = helpTransfer(tab, f);
+            //找到数组下标后，数组中已经有元素了，f是头结点
             else {
                 V oldVal = null;
+                //获得头结点f的监视器锁
                 synchronized (f) {
                     if (tabAt(tab, i) == f) {
+                        //头结点f的哈希值大于0，说明是链表
                         if (fh >= 0) {
+                            //用于累加，记录链表长度
                             binCount = 1;
                             for (Node<K,V> e = f;; ++binCount) {
                                 K ek;
+                                //如果该节点的hash值等于待put的key的hash并且key值与节点key值“相等”则覆盖value
                                 if (e.hash == hash &&
                                     ((ek = e.key) == key ||
                                      (ek != null && key.equals(ek)))) {
@@ -1039,6 +1055,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                                     break;
                                 }
                                 Node<K,V> pred = e;
+                                //如果到了链表末尾，则将新值插入链表最后
                                 if ((e = e.next) == null) {
                                     pred.next = new Node<K,V>(hash, key,
                                                               value, null);
@@ -1046,9 +1063,11 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                                 }
                             }
                         }
+                        //红黑树
                         else if (f instanceof TreeBin) {
                             Node<K,V> p;
                             binCount = 2;
+                            //调用红黑树的方法插入节点
                             if ((p = ((TreeBin<K,V>)f).putTreeVal(hash, key,
                                                            value)) != null) {
                                 oldVal = p.val;
@@ -1060,6 +1079,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                 }
                 if (binCount != 0) {
                     if (binCount >= TREEIFY_THRESHOLD)
+                        //链表长度大于8转为红黑树
                         treeifyBin(tab, i);
                     if (oldVal != null)
                         return oldVal;
@@ -1366,6 +1386,9 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
     /**
      * Stripped-down version of helper class used in previous version,
      * declared for the sake of serialization compatibility
+     */
+    /**
+     * Segment是种可重入锁(ReentrantLock)
      */
     static class Segment<K,V> extends ReentrantLock implements Serializable {
         private static final long serialVersionUID = 2249069246763182397L;
@@ -2223,15 +2246,19 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
     private final Node<K,V>[] initTable() {
         Node<K,V>[] tab; int sc;
         while ((tab = table) == null || tab.length == 0) {
+            //初始化工作被其他线程抢先了
             if ((sc = sizeCtl) < 0)
                 Thread.yield(); // lost initialization race; just spin
             else if (U.compareAndSwapInt(this, SIZECTL, sc, -1)) {
                 try {
                     if ((tab = table) == null || tab.length == 0) {
+                        //DEFAULT_CAPACITY 默认初始容量是 16
                         int n = (sc > 0) ? sc : DEFAULT_CAPACITY;
-                        @SuppressWarnings("unchecked")
+                        //初始化数组，长度为默认初始容量或初始化时指定容量大小
                         Node<K,V>[] nt = (Node<K,V>[])new Node<?,?>[n];
+                        // 将这个数组赋值给 table，table 是 volatile 的
                         table = tab = nt;
+                        //如果n为16，则sc为12
                         sc = n - (n >>> 2);
                     }
                 } finally {
