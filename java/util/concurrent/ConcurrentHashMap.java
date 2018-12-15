@@ -1023,6 +1023,19 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
     }
 
     /** Implementation for put and putIfAbsent */
+    /**
+     * 1.计算hash值
+     * 2.循环数组
+     *      a、数组为空，进行初始化
+     *      b、找到hash值对应的数组下标((n-1)&h)，该下标处数组元素为空，使用CAS操作将新值放入数组中
+     *          成功：退出循环
+     *          失败：有并发操作发生，进行下一次循环
+     *      c、该下标的hash值为-1，说明正在进行扩容，需要进行数据在新老数组之间的迁移
+     *      d、该下标处数组元素不为空，则锁住头节点，进行链表或是红黑树的插入
+     *          头节点的哈希值大于0，进行链表插入
+     *          如果头节点为TreeBin，进行红黑树插入
+     *      e、判断链表长度，大于8则转为红黑树
+     */
     final V putVal(K key, V value, boolean onlyIfAbsent) {
         if (key == null || value == null) throw new NullPointerException();
         //得到hash值
