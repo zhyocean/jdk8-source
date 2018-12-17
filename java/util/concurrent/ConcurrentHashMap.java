@@ -2669,6 +2669,9 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      */
     /**
      * 数组小时将链表转换为红黑树，否则扩容
+     *
+     * @param tab 数组
+     * @param index 数组下标
      */
     private final void treeifyBin(Node<K,V>[] tab, int index) {
         Node<K,V> b; int n, sc;
