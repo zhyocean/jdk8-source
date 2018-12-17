@@ -564,11 +564,12 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         Node<K,V>[] tab; Node<K,V> first, e; int n; K k;
         if ((tab = table) != null && (n = tab.length) > 0 &&
             (first = tab[(n - 1) & hash]) != null) {
+            //首先判断定位到的数组下标的第一个节点是否是要找的节点
             if (first.hash == hash && // always check first node
                 ((k = first.key) == key || (key != null && key.equals(k))))
                 return first;
             if ((e = first.next) != null) {
-                //判断是否为红黑树
+                //如果第一个节点是红黑树的节点，则进行红黑树节点查找
                 if (first instanceof TreeNode)
                     return ((TreeNode<K,V>)first).getTreeNode(hash, key);
                 //否则去链表中查找
@@ -633,25 +634,27 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         //table为空则创建
         if ((tab = table) == null || (n = tab.length) == 0)
             n = (tab = resize()).length;
-        //如果该hash值的下标出没有元素则直接插入
+        //通过hash值找到对应的数组下标，如果该下标处元素为空，则直接插入值
+        //通过(n - 1) & hash运算，可以保证计算出的下标在数组大小范围内
         if ((p = tab[i = (n - 1) & hash]) == null)
             tab[i] = newNode(hash, key, value, null);
+        //该下标处元素不为空
         else {
             Node<K,V> e; K k;
-            //如果存在该key则直接覆盖
+            //判断数组下标处的元素是否就是要插入的元素，判断key值是否相等
             if (p.hash == hash &&
                 ((k = p.key) == key || (key != null && key.equals(k))))
                 e = p;
-            //为红黑树，则进行红黑树的插入
+            //如果该下标处元素表示红黑树的节点，则进行红黑树的插入
             else if (p instanceof TreeNode)
                 e = ((TreeNode<K,V>)p).putTreeVal(this, tab, hash, key, value);
-            //为链表，则遍历链表进行插入
+            //否则为链表，则遍历链表进行插入
             else {
                 for (int binCount = 0; ; ++binCount) {
-                    //不存在该key，则在链表的头处为该key的值新建一个节点
+                    //遍历完了链表，没有找到要插入的元素，于是在链表尾部插入该元素
                     if ((e = p.next) == null) {
                         p.next = newNode(hash, key, value, null);
-                        //当链表中节点数超过8，则转换成红黑树存储
+                        //当链表中节点数超过8个时，将链表转换成红黑树存储
                         if (binCount >= TREEIFY_THRESHOLD - 1) // -1 for 1st
                             treeifyBin(tab, hash);
                         break;
@@ -663,6 +666,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                     p = e;
                 }
             }
+            //e != null表示存在与插入值相同的key，直接进行覆盖
             if (e != null) { // existing mapping for key
                 V oldValue = e.value;
                 if (!onlyIfAbsent || oldValue == null)
@@ -672,6 +676,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             }
         }
         ++modCount;
+        //当数组大小超过容量阈值时，进行扩容
         if (++size > threshold)
             resize();
         afterNodeInsertion(evict);
@@ -697,10 +702,12 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         int oldThr = threshold;
         int newCap, newThr = 0;
         if (oldCap > 0) {
+            //如果旧数组容量大于等于最大容量，则修改threshold的值，并返回旧数组
             if (oldCap >= MAXIMUM_CAPACITY) {
                 threshold = Integer.MAX_VALUE;
                 return oldTab;
             }
+            //否则将数组大小扩大为原来的两倍(二进制左移一位)，并且将threshold也扩大为原来的两倍
             else if ((newCap = oldCap << 1) < MAXIMUM_CAPACITY &&
                      oldCap >= DEFAULT_INITIAL_CAPACITY)
                 newThr = oldThr << 1; // double threshold
@@ -712,29 +719,36 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             newThr = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY);
         }
         if (newThr == 0) {
+            //新数组长度乘以负载因子作为新数组的threshold
             float ft = (float)newCap * loadFactor;
             newThr = (newCap < MAXIMUM_CAPACITY && ft < (float)MAXIMUM_CAPACITY ?
                       (int)ft : Integer.MAX_VALUE);
         }
         threshold = newThr;
-        @SuppressWarnings({"rawtypes","unchecked"})
-            Node<K,V>[] newTab = (Node<K,V>[])new Node[newCap];
+        //创建新数组
+        Node<K,V>[] newTab = (Node<K,V>[])new Node[newCap];
         table = newTab;
         if (oldTab != null) {
+            //遍历旧数组，进行数据迁移
             for (int j = 0; j < oldCap; ++j) {
                 Node<K,V> e;
                 if ((e = oldTab[j]) != null) {
                     oldTab[j] = null;
+                    //如果该数组位置处只有一个元素就直接迁移这个元素就行
                     if (e.next == null)
+                        //重新计算节点在新数组中的下标位置，并放入其中
                         newTab[e.hash & (newCap - 1)] = e;
+                    //如果为红黑树节点就进行红黑树的迁移方式，具体的不展开说明了
                     else if (e instanceof TreeNode)
                         ((TreeNode<K,V>)e).split(this, newTab, j, oldCap);
                     else { // preserve order
+                        //创建两条链，lo链跟hi链，也就是将原先本应该在一条链表上的节点如今分成两条链存放
                         Node<K,V> loHead = null, loTail = null;
                         Node<K,V> hiHead = null, hiTail = null;
                         Node<K,V> next;
                         do {
                             next = e.next;
+                            //将(e.hash & oldCap)计算出值为偶数的放在lo链上
                             if ((e.hash & oldCap) == 0) {
                                 if (loTail == null)
                                     loHead = e;
@@ -742,6 +756,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                                     loTail.next = e;
                                 loTail = e;
                             }
+                            //奇数的放在hi链上
                             else {
                                 if (hiTail == null)
                                     hiHead = e;
@@ -750,10 +765,12 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                                 hiTail = e;
                             }
                         } while ((e = next) != null);
+                        //将lo链放在新数组的原位置
                         if (loTail != null) {
                             loTail.next = null;
                             newTab[j] = loHead;
                         }
+                        //将hi链放在新数组的原位置+oldCap的下标处
                         if (hiTail != null) {
                             hiTail.next = null;
                             newTab[j + oldCap] = hiHead;
