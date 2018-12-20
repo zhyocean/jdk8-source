@@ -2544,6 +2544,9 @@ public class Collections {
      * @param  m the map to be "wrapped" in a synchronized map.
      * @return a synchronized view of the specified map.
      */
+    /**
+     * SynchronizeMap利用线程间争抢mutex信号量实现同步
+     */
     public static <K,V> Map<K,V> synchronizedMap(Map<K,V> m) {
         return new SynchronizedMap<>(m);
     }
