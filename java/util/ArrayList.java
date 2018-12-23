@@ -204,6 +204,9 @@ public class ArrayList<E> extends AbstractList<E>
         if (size < elementData.length) {
             elementData = (size == 0)
               ? EMPTY_ELEMENTDATA
+              //Arrays.copyOf：在方法中创建相同类型的数组，然后调用系统的arrayCopy方法进行数组间的复制
+              //elementData：要拷贝的数组
+              //size：要拷贝的长度
               : Arrays.copyOf(elementData, size);
         }
     }
@@ -281,6 +284,7 @@ public class ArrayList<E> extends AbstractList<E>
         if (newCapacity - MAX_ARRAY_SIZE > 0)
             newCapacity = hugeCapacity(minCapacity);
         // minCapacity is usually close to size, so this is a win:
+        //Arrays.copyOf两个参数一个为需要扩容的数组，一个为需要扩容的长度
         elementData = Arrays.copyOf(elementData, newCapacity);
     }
 
@@ -513,6 +517,13 @@ public class ArrayList<E> extends AbstractList<E>
         rangeCheckForAdd(index);
 
         ensureCapacityInternal(size + 1);  // Increments modCount!!
+
+        //调用native方法
+        //elementData：旧数组
+        //index：在旧数组的起始位置
+        //elementData：新数组
+        //index + 1：在新数组中的起始位置
+        //size - index：需要拷贝长度
         System.arraycopy(elementData, index, elementData, index + 1,
                          size - index);
         elementData[index] = element;
