@@ -2545,6 +2545,8 @@ public class Collections {
      * @return a synchronized view of the specified map.
      */
     /**
+     * Collections通过一个静态的synchronizedMap方法获得一个线程安全的map类
+     *
      * SynchronizeMap利用线程间争抢mutex信号量实现同步
      */
     public static <K,V> Map<K,V> synchronizedMap(Map<K,V> m) {
