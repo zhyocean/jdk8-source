@@ -434,6 +434,12 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      * @throws IllegalArgumentException if the initial capacity is negative
      *         or the load factor is nonpositive
      */
+    /**
+     * 判断初始化容量是否超过int最大范围以及负载因子是否在正常范围
+     *
+     * @param initialCapacity 初始化容量
+     * @param loadFactor 负载因子
+     */
     public HashMap(int initialCapacity, float loadFactor) {
         if (initialCapacity < 0)
             throw new IllegalArgumentException("Illegal initial capacity: " +
@@ -695,6 +701,10 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     /**
      * 数组扩容
      * 扩容时需要为原先数组中的键值对重新计算hash值作为存放下标
+     *
+     * 如果旧数组容量大于0，则新数组容量为旧数组容量的两倍，数组最大扩容元素个数也增加为原来的两倍
+     * 如果旧的数组扩容最大元素个数大于0，则新数组容量为该值
+     * 否则数组初始化大小为16
      */
     final Node<K,V>[] resize() {
         Node<K,V>[] oldTab = table;
