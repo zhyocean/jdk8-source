@@ -127,6 +127,10 @@ import java.util.function.BiFunction;
  * @see     TreeMap
  * @since JDK1.0
  */
+
+/**
+ * Hashtable采用数组加链表结构存储数据
+ */
 public class Hashtable<K,V>
     extends Dictionary<K,V>
     implements Map<K,V>, Cloneable, java.io.Serializable {
@@ -316,6 +320,10 @@ public class Hashtable<K,V>
      * @throws NullPointerException  if the value is <code>null</code>
      * @since 1.2
      */
+    /**
+     * 查询是否包value
+     * 循环table数组每一个元素以及该元素上的每一条链表
+     */
     public boolean containsValue(Object value) {
         return contains(value);
     }
@@ -330,10 +338,16 @@ public class Hashtable<K,V>
      * @throws  NullPointerException  if the key is <code>null</code>
      * @see     #contains(Object)
      */
+    /**
+     * 查询是否包key
+     * 1.计算key的hash值
+     * 2.通过hash值获得该key应该在数组中的下标
+     * 3.循环该下标处的链表，找出是否含有hash值以及key值相等的元素
+     */
     public synchronized boolean containsKey(Object key) {
         Entry<?,?> tab[] = table;
         int hash = key.hashCode();
-        int index = (hash & 0x7FFFFFFF) % tab.length;
+        int index = (hash & 0x7FFFFFFF) % tab.length; //通过hash值计算出数组下标
         for (Entry<?,?> e = tab[index] ; e != null ; e = e.next) {
             if ((e.hash == hash) && e.key.equals(key)) {
                 return true;
@@ -385,6 +399,10 @@ public class Hashtable<K,V>
      * number of keys in the hashtable exceeds this hashtable's capacity
      * and load factor.
      */
+    /**
+     * 数组扩容
+     * 扩容成原数组大小的两倍
+     */
     @SuppressWarnings("unchecked")
     protected void rehash() {
         int oldCapacity = table.length;
@@ -401,14 +419,17 @@ public class Hashtable<K,V>
         Entry<?,?>[] newMap = new Entry<?,?>[newCapacity];
 
         modCount++;
+        //设置新的阈值
         threshold = (int)Math.min(newCapacity * loadFactor, MAX_ARRAY_SIZE + 1);
         table = newMap;
 
+        //数据迁移
         for (int i = oldCapacity ; i-- > 0 ;) {
             for (Entry<K,V> old = (Entry<K,V>)oldMap[i] ; old != null ; ) {
                 Entry<K,V> e = old;
                 old = old.next;
 
+                //重新计算Entry在新数组中的下标位置
                 int index = (e.hash & 0x7FFFFFFF) % newCapacity;
                 e.next = (Entry<K,V>)newMap[index];
                 newMap[index] = e;
@@ -416,10 +437,15 @@ public class Hashtable<K,V>
         }
     }
 
+    /**
+     * 1.判断是否达到阈值而扩容
+     * 2.否则创建新节点，将该节点作为链表的头节点
+     */
     private void addEntry(int hash, K key, V value, int index) {
         modCount++;
 
         Entry<?,?> tab[] = table;
+        //判断是否需要扩容
         if (count >= threshold) {
             // Rehash the table if the threshold is exceeded
             rehash();
@@ -432,6 +458,7 @@ public class Hashtable<K,V>
         // Creates the new entry.
         @SuppressWarnings("unchecked")
         Entry<K,V> e = (Entry<K,V>) tab[index];
+        //放入新节点，并将新节点作为链表的头
         tab[index] = new Entry<>(hash, key, value, e);
         count++;
     }
@@ -453,6 +480,9 @@ public class Hashtable<K,V>
      * @see     Object#equals(Object)
      * @see     #get(Object)
      */
+    /**
+     * Hashtable中不能放null值，而Hashmap可以将null作为value
+     */
     public synchronized V put(K key, V value) {
         // Make sure the value is not null
         if (value == null) {
@@ -465,6 +495,7 @@ public class Hashtable<K,V>
         int index = (hash & 0x7FFFFFFF) % tab.length;
         @SuppressWarnings("unchecked")
         Entry<K,V> entry = (Entry<K,V>)tab[index];
+        //确保key不存在
         for(; entry != null ; entry = entry.next) {
             if ((entry.hash == hash) && entry.key.equals(key)) {
                 V old = entry.value;
@@ -473,6 +504,7 @@ public class Hashtable<K,V>
             }
         }
 
+        //否则进行put
         addEntry(hash, key, value, index);
         return null;
     }
@@ -485,6 +517,12 @@ public class Hashtable<K,V>
      * @return  the value to which the key had been mapped in this hashtable,
      *          or <code>null</code> if the key did not have a mapping
      * @throws  NullPointerException  if the key is <code>null</code>
+     */
+    /**
+     * 删除节点
+     *
+     * 确定要删除key的位置后判断链表首节点是否是要删除节点，是则直接将链表下一个元素作为首节点(prev为null，这就是首节点)
+     * 否则要删除的节点不是首节点，则通过修改要删除元素的前后链关系进行删除
      */
     public synchronized V remove(Object key) {
         Entry<?,?> tab[] = table;
