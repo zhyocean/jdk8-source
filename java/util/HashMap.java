@@ -323,6 +323,9 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      */
     /**
      * 计算出hash值，得出key所在bucket下标
+     *
+     * 计算方式：
+     * 将获得的hashCode值的高16位与低16位进行异或运算
      */
     static final int hash(Object key) {
         int h;
