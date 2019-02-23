@@ -340,7 +340,7 @@ public class Hashtable<K,V>
      */
     /**
      * 查询是否包key
-     * 1.计算key的hash值
+     * 1.计算key的hash值(HashTable获得hash值的方式是将hashCode的低28位对数组长度取模)
      * 2.通过hash值获得该key应该在数组中的下标
      * 3.循环该下标处的链表，找出是否含有hash值以及key值相等的元素
      */
