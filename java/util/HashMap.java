@@ -642,6 +642,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             n = (tab = resize()).length;
         //通过hash值找到对应的数组下标，如果该下标处元素为空，则直接插入值
         //通过(n - 1) & hash运算，可以保证计算出的下标在数组大小范围内
+        //当put时key为null，计算出的hash值也为空，则将该key为null的值放在数组table[0]位置上
         if ((p = tab[i = (n - 1) & hash]) == null)
             tab[i] = newNode(hash, key, value, null);
         //该下标处元素不为空
