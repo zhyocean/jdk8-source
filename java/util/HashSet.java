@@ -92,6 +92,7 @@ public class HashSet<E>
 {
     static final long serialVersionUID = -5024744406713321676L;
 
+    //HashSet底层是一个HashMap
     private transient HashMap<E,Object> map;
 
     // Dummy value to associate with an Object in the backing Map
@@ -214,6 +215,9 @@ public class HashSet<E>
      * @param e element to be added to this set
      * @return <tt>true</tt> if this set did not already contain the specified
      * element
+     */
+    /**
+     * HashSet的add就是将参数作为key，一个Object作为值进行add
      */
     public boolean add(E e) {
         return map.put(e, PRESENT)==null;
