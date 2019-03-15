@@ -200,11 +200,13 @@ public class LinkedHashMap<K,V>
 
     /**
      * The head (eldest) of the doubly linked list.
+     * 指向双向链表的头部
      */
     transient LinkedHashMap.Entry<K,V> head;
 
     /**
      * The tail (youngest) of the doubly linked list.
+     * 指向双向链表的尾部
      */
     transient LinkedHashMap.Entry<K,V> tail;
 
@@ -214,16 +216,23 @@ public class LinkedHashMap<K,V>
      *
      * @serial
      */
+    /**
+     * true -- LRU
+     * false -- FIFO
+     */
     final boolean accessOrder;
 
     // internal utilities
 
     // link at the end of list
+    //put时将节点放在链表尾部
     private void linkNodeLast(LinkedHashMap.Entry<K,V> p) {
         LinkedHashMap.Entry<K,V> last = tail;
         tail = p;
+        //如果last为空，则p设置为head
         if (last == null)
             head = p;
+        //否则将p接在链表尾巴上
         else {
             p.before = last;
             last.after = p;
@@ -252,6 +261,9 @@ public class LinkedHashMap<K,V>
         head = tail = null;
     }
 
+    /**
+     * 在父类HashMap的put方法中调用newNode时，实则是通过多态调用LinkedHashMap的newNode方法
+     */
     Node<K,V> newNode(int hash, K key, V value, Node<K,V> e) {
         LinkedHashMap.Entry<K,V> p =
             new LinkedHashMap.Entry<K,V>(hash, key, value, e);
@@ -284,10 +296,12 @@ public class LinkedHashMap<K,V>
         LinkedHashMap.Entry<K,V> p =
             (LinkedHashMap.Entry<K,V>)e, b = p.before, a = p.after;
         p.before = p.after = null;
+        //如果p是头部，则将p的下一个节点设置为head
         if (b == null)
             head = a;
         else
             b.after = a;
+        //如果链表中本来就只有p一个节点，则移除p节点后，将tail设置为null(b = p.before b是null)
         if (a == null)
             tail = b;
         else
@@ -296,28 +310,36 @@ public class LinkedHashMap<K,V>
 
     void afterNodeInsertion(boolean evict) { // possibly remove eldest
         LinkedHashMap.Entry<K,V> first;
+        //removeEldestEntry(first)返回总是false，所以这又是一个钩子函数，留着给子类使用
         if (evict && (first = head) != null && removeEldestEntry(first)) {
             K key = first.key;
             removeNode(hash(key), key, null, false, true);
         }
     }
 
+    /**
+     * 如果accessOrder为true，则将参数节点e放到双向链表尾部。a->b->c->e->f->g ————> a->b->c->f->g->e
+     */
     void afterNodeAccess(Node<K,V> e) { // move node to last
         LinkedHashMap.Entry<K,V> last;
         if (accessOrder && (last = tail) != e) {
             LinkedHashMap.Entry<K,V> p =
                 (LinkedHashMap.Entry<K,V>)e, b = p.before, a = p.after;
             p.after = null;
+            //p为头部，前一个节点b不存在，则将p的下一个节点a设置为头部
             if (b == null)
                 head = a;
             else
                 b.after = a;
+            //p是尾部，后一个节点a不存在，则将p的上一个节点b设置为last
             if (a != null)
                 a.before = b;
             else
                 last = b;
+            //链表中只有p一个节点，则将p直接设置为head
             if (last == null)
                 head = p;
+            //将p插在链表的最后
             else {
                 p.before = last;
                 last.after = p;
@@ -437,8 +459,10 @@ public class LinkedHashMap<K,V>
      */
     public V get(Object key) {
         Node<K,V> e;
+        //调用HashMap的getNode方法
         if ((e = getNode(hash(key), key)) == null)
             return null;
+        //如果accessOrder为true，则需要将get的节点放到双向链表的尾部
         if (accessOrder)
             afterNodeAccess(e);
         return e.value;
