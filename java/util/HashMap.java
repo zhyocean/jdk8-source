@@ -1822,6 +1822,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     }
 
     // Callbacks to allow LinkedHashMap post-actions
+    //预留给LinkedHashMap的钩子函数
     void afterNodeAccess(Node<K,V> p) { }
     void afterNodeInsertion(boolean evict) { }
     void afterNodeRemoval(Node<K,V> p) { }

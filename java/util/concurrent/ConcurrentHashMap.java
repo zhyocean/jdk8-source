@@ -686,7 +686,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      */
     static final int spread(int h) {
         return (h ^ (h >>> 16)) & HASH_BITS;
-    }
+}
 
     /**
      * Returns a power of two table size for the given desired capacity.
@@ -1037,6 +1037,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      *      e、判断链表长度，大于8则转为红黑树
      */
     final V putVal(K key, V value, boolean onlyIfAbsent) {
+        //ConcurrentHashMap的key不能为null
         if (key == null || value == null) throw new NullPointerException();
         //得到hash值
         int hash = spread(key.hashCode());
